@@ -83,13 +83,19 @@ const products = useSelector(selectAllProducts);
 
 useEffect(() => {
 
-dispatch(fetchAllProductsAsync())
+dispatch(fetchProductsByFilterAsync(filter))
 
-}, [dispatch])
+}, [dispatch, filter])
 
 
 const handleFilter =(e, section, option)=>{
-  const newFilter = {...filter, [section.id] : option.value}
+  const newFilter = {...filter}
+  if(e.target.checked){
+    newFilter[section.id] = option.value;
+  }
+  else{
+    delete newFilter[section.id];
+  }
 
   setFilter(newFilter);
   dispatch(fetchProductsByFilterAsync(newFilter))
