@@ -24,7 +24,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllProductsAsync, fetchProductsByFilterAsync, selectAllProducts } from "../productSlice";
+import { fetchAllProductsAsync, fetchBrandsAsync, fetchCategoriesAsync, fetchProductsByFilterAsync, selectAllProducts, selectBrands, selectCategories } from "../productSlice";
 
 const sortOptions = [
   { name: "Best Rating", sort:'rating', order:'desc',  current: false },
@@ -32,40 +32,40 @@ const sortOptions = [
   { name: "Price: High to Low", sort:'price', order:'desc',   current: false },
 ];
 
-const filters = [
+// const filters = [
  
-  {
-    id: "category",
-    name: "Category",
-    options: [
-      { value: "beauty", label: "Beauty", checked: false },
-      { value: "fragrances", label: "Fragrances", checked: false },
-      { value: "furniture", label: "Furniture", checked: false },
-      { value: "groceries", label: "Groceries", checked: false },
-    ],
-  },
-  {
-    id: "brand",
-    name: "Brands",
-    options: [
-      { value: 'Essence', label: 'Essence', checked: false },
-      { value: 'Glamour Beauty', label: 'Glamour Beauty', checked: false },
-      { value: 'Velvet Touch', label: 'Velvet Touch', checked: false },
-      { value: 'Chic Cosmetics', label: 'Chic Cosmetics', checked: false },
-      { value: 'Nail Couture', label: 'Nail Couture', checked: false },
-      { value: 'Calvin Klein', label: 'Calvin Klein', checked: false },
-      { value: 'Chanel', label: 'Chanel', checked: false },
-      { value: 'Dior', label: 'Dior', checked: false },
-      { value: 'Dolce & Gabbana', label: 'Dolce & Gabbana', checked: false },
-      { value: 'Gucci', label: 'Gucci', checked: false },
-      { value: 'Annibale Colombo', label: 'Annibale Colombo', checked: false },
-      { value: 'Furniture Co.', label: 'Furniture Co.', checked: false },
-      { value: 'Knoll', label: 'Knoll', checked: false },
-      { value: 'Bath Trends', label: 'Bath Trends', checked: false }
-    ],
-  },
+//   {
+//     id: "category",
+//     name: "Category",
+//     options: [
+//       { value: "beauty", label: "Beauty", checked: false },
+//       { value: "fragrances", label: "Fragrances", checked: false },
+//       { value: "furniture", label: "Furniture", checked: false },
+//       { value: "groceries", label: "Groceries", checked: false },
+//     ],
+//   },
+//   {
+//     id: "brand",
+//     name: "Brands",
+//     options: [
+//       { value: 'Essence', label: 'Essence', checked: false },
+//       { value: 'Glamour Beauty', label: 'Glamour Beauty', checked: false },
+//       { value: 'Velvet Touch', label: 'Velvet Touch', checked: false },
+//       { value: 'Chic Cosmetics', label: 'Chic Cosmetics', checked: false },
+//       { value: 'Nail Couture', label: 'Nail Couture', checked: false },
+//       { value: 'Calvin Klein', label: 'Calvin Klein', checked: false },
+//       { value: 'Chanel', label: 'Chanel', checked: false },
+//       { value: 'Dior', label: 'Dior', checked: false },
+//       { value: 'Dolce & Gabbana', label: 'Dolce & Gabbana', checked: false },
+//       { value: 'Gucci', label: 'Gucci', checked: false },
+//       { value: 'Annibale Colombo', label: 'Annibale Colombo', checked: false },
+//       { value: 'Furniture Co.', label: 'Furniture Co.', checked: false },
+//       { value: 'Knoll', label: 'Knoll', checked: false },
+//       { value: 'Bath Trends', label: 'Bath Trends', checked: false }
+//     ],
+//   },
 
-];
+// ];
 
 
 function classNames(...classes) {
@@ -77,36 +77,79 @@ export default function ProductList() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [filter, setFilter] = useState({});
-  
+  const [page, setPage]  = useState(1);
+  const [sort, setSort] = useState({})
+  const ITEMS_PER_PAGE = 10;
+  const brands = useSelector(selectBrands);
+  const categories = useSelector(selectCategories); 
 const products = useSelector(selectAllProducts);
+
+const filters = [
+  {
+    id: 'category',
+    name: 'Category',
+    options: categories,
+  },
+  {
+    id: 'brand',
+    name: 'Brands',
+    options: brands,
+  },
+];
+
 
 
 useEffect(() => {
+const pagination = {_page : page, _limit: ITEMS_PER_PAGE}
+dispatch(fetchProductsByFilterAsync({filter, sort, pagination}))
 
-dispatch(fetchProductsByFilterAsync(filter))
-
-}, [dispatch, filter])
+}, [dispatch, filter, sort, page])
 
 
-const handleFilter =(e, section, option)=>{
-  const newFilter = {...filter}
-  if(e.target.checked){
-    newFilter[section.id] = option.value;
+const handleFilter = (e, section, option) => {
+  console.log(e.target.checked);
+  const newFilter = { ...filter };
+  if (e.target.checked) {
+    if (newFilter[section.id]) {
+      newFilter[section.id].push(option.value);
+    } else {
+      newFilter[section.id] = [option.value];
+    }
+  } else {
+    const index = newFilter[section.id].findIndex(
+      (el) => el === option.value
+    );
+    newFilter[section.id].splice(index, 1);
   }
-  else{
-    delete newFilter[section.id];
-  }
+  console.log({ newFilter });
 
   setFilter(newFilter);
-  dispatch(fetchProductsByFilterAsync(newFilter))
-}
-const handleSort =(e, option)=>{
-  const newFilter = {...filter, _sort: option.sort, _order: option.order}
+};
 
-  setFilter(newFilter);
-  dispatch(fetchProductsByFilterAsync(newFilter))
-}
 
+const handleSort = (e, option) => {
+  const sort = { _sort: option.sort, _order: option.order };
+  console.log({ sort });
+  setSort(sort);
+};
+
+const handlePage = (page) => {
+  console.log({ page });
+  setPage(page);
+};
+
+const totalItems = 30;
+
+const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+useEffect(() => {
+  setPage(1);
+}, [totalItems, sort]);
+
+useEffect(() => {
+  dispatch(fetchBrandsAsync());
+  dispatch(fetchCategoriesAsync());
+}, []);
 
   return (
     <div>
@@ -362,7 +405,7 @@ const handleSort =(e, option)=>{
                   <div className="bg-white">
                     <div className="mx-auto max-w-2xl px-4 sm:px-6  lg:max-w-7xl lg:px-8">
                       <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-                        {products.map((product) => (
+                        {products?.map((product) => (
                           <div key={product.id} className="group relative" onClick={()=>navigate('/product-details')}>
                             <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-60">
                               <img
@@ -408,80 +451,77 @@ const handleSort =(e, option)=>{
       </div>
 
 
-
       <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-      <div className="flex flex-1 justify-between sm:hidden">
-        <a
-          href="#"
-          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Previous
-        </a>
-        <a
-          href="#"
-          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Next
-        </a>
-      </div>
-      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
-            <span className="font-medium">97</span> results
-          </p>
+        <div className="flex flex-1 justify-between sm:hidden">
+          <div
+            onClick={(e) => handlePage(page > 1 ? page - 1 : page)}
+            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Previous
+          </div>
+          <div
+            onClick={(e) => handlePage(page < totalPages ? page + 1 : page)}
+            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Next
+          </div>
         </div>
-        <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-            <a
-              href="#"
-              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing{' '}
+              <span className="font-medium">
+                {(page - 1) * ITEMS_PER_PAGE + 1}
+              </span>{' '}
+              to{' '}
+              <span className="font-medium">
+                {page * ITEMS_PER_PAGE > totalItems
+                  ? totalItems
+                  : page * ITEMS_PER_PAGE}
+              </span>{' '}
+              of <span className="font-medium">{totalItems}</span> results
+            </p>
+          </div>
+          <div>
+            <nav
+              className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+              aria-label="Pagination"
             >
-              <span className="sr-only">Previous</span>
-              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
-            </a>
-            {/* Current: "z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600", Default: "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0" */}
-            <a
-              href="#"
-              aria-current="page"
-              className="relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              1
-            </a>
-            <a
-              href="#"
-              className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-            >
-              2
-            </a>
-            <a
-              href="#"
-              className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 md:inline-flex"
-            >
-              3
-            </a>
-            <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
-              ...
-            </span>
-            <a
-              href="#"
-              className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 md:inline-flex"
-            >
-              8
-            </a>
-        
-            <a
-              href="#"
-              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-            >
-              <span className="sr-only">Next</span>
-              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
-            </a>
-          </nav>
+              <div
+                onClick={(e) => handlePage(page > 1 ? page - 1 : page)}
+                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+              >
+                <span className="sr-only">Previous</span>
+                <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+              </div>
+              {/* Current: "z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600", Default: "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0" */}
+  
+              {Array.from({ length: totalPages }).map((el, index) => (
+                <div
+                  key={index}
+                  onClick={(e) => handlePage(index + 1)}
+                  aria-current="page"
+                  className={`relative cursor-pointer z-10 inline-flex items-center ${
+                    index + 1 === page
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-400'
+                  } px-4 py-2 text-sm font-semibold  focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600`}
+                >
+                  {index + 1}
+                </div>
+              ))}
+  
+              <div
+                onClick={(e) => handlePage(page < totalPages ? page + 1 : page)}
+                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+              >
+                <span className="sr-only">Next</span>
+                <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+              </div>
+            </nav>
+          </div>
         </div>
       </div>
-    </div>
-
 
     </div>
   );
